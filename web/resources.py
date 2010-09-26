@@ -33,7 +33,7 @@ class HomeResource(resource.Resource):
 
     self.putChild('', static.File('static/index.html'))
     self.putChild('signup', SignupResource(dbpool))
-    self.putChild('user', UserResource(dbpool))
+    self.putChild('user', UserResourceTree(dbpool))
     #self.putChild('browse', ...)
 
 
@@ -76,7 +76,7 @@ class SignupResource(static.File):
 
 
 
-class UserResource(resource.Resource):
+class UserResourceTree(resource.Resource):
   def __init__(self, dbpool):
     resource.Resource.__init__(self)
     self.__dbpool = dbpool
@@ -93,4 +93,33 @@ class UserResource(resource.Resource):
 
   def render_GET(self, request):
     self.__dbpool.runQuery("SELECT email FROM user ORDER BY email").addCallbacks(self.__renderList, log.msg, (request,))
+    return server.NOT_DONE_YET
+
+  def getChild(self, path, request):
+    return UserResource(path, self.__dbpool)
+
+
+class UserResource(resource.Resource):
+  def __init__(self, email, dbpool):
+    resource.Resource.__init__(self)
+    self.__email = email
+    self.__dbpool = dbpool
+
+  def __renderList(self, result, request):
+    s = cStringIO.StringIO()
+    s.write('<h1>Posts by %s</h1>' % self.__email)
+    for userRow in result:
+      s.write('<hr>')
+      s.write('<h2>%s</h2>' % userRow[0])
+      s.write('<div>%s</div>' % userRow[1])
+    request.write(s.getvalue())
+    request.finish()
+
+  def render_GET(self, request):
+    query = """
+        SELECT date, text FROM user_entry INNER JOIN user ON user.id == user_entry.user_id
+        WHERE email = ?
+        ORDER BY date desc
+        """
+    self.__dbpool.runQuery(query, (self.__email,)).addCallbacks(self.__renderList, log.msg, (request,))
     return server.NOT_DONE_YET
