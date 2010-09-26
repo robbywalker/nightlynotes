@@ -6,8 +6,14 @@
   },
   "email": {
     "outgoing": {
+      "host": "smtp.gmail.com",
+      "domain": "nightlynotes.com",
+      "handle": "reminder"
     },
     "incoming": {
+      "host": "pop.gmail.com",
+      "username": "",
+      "password": ""
     }
   }
 }

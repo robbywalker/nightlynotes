@@ -19,7 +19,6 @@
 
 from twisted.python import log
 
-
 def SetupDatabase(txn):
   log.msg('Setting up database')
 
@@ -41,3 +40,11 @@ def SetupDatabase(txn):
     txn.execute('REPLACE INTO globals VALUES ("version", "1")')
     version = 1
     log.msg('Upgraded to version 1')
+
+  if version == 1:
+    txn.execute('CREATE TABLE token (id INTEGER PRIMARY KEY AUTOINCREMENT, token VARCHAR(255), user_id INTEGER, date DATE)')
+    txn.execute('CREATE UNIQUE INDEX user_token ON token(token)')
+    txn.execute('REPLACE INTO globals VALUES ("version", "2")')
+    version = 2
+    log.msg('Upgraded to version 2')
+
