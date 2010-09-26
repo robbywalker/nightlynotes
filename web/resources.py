@@ -23,8 +23,9 @@ import cgi
 
 
 class HomeResource(resource.Resource):
-  def __init__(self):
+  def __init__(self, dbpool):
     resource.Resource.__init__(self)
+    self.__dbpool = dbpool
 
     self.putChild('', static.File("static/index.html"))
     #self.putChild('signup', ...)

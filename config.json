@@ -1,8 +1,8 @@
 {
   "port": 8421,
   "database": {
-    "module": "sqlite",
-    "parameters": []
+    "module": "sqlite3",
+    "parameters": ["nightlynotes.db"]
   },
   "email": {
     "outgoing": {

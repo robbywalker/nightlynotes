@@ -18,15 +18,21 @@
 #
 
 from twisted.application import internet, service
+from twisted.enterprise import adbapi
+from twisted.python import log
 from twisted.web import resource, server, static
 
 import json
 import sys
 
+from db import setup
 from web import resources
 
 config = json.load(open('config.json'))
-  
+
+dbpool = adbapi.ConnectionPool(config['database']['module'], *config['database']['parameters'])
+dbpool.runInteraction(setup.SetupDatabase).addErrback(log.msg)
+
 application = service.Application('nightlynotes')
 serviceCollection = service.IServiceCollection(application)
-internet.TCPServer(config['port'], server.Site(resources.HomeResource())).setServiceParent(serviceCollection)
+internet.TCPServer(config['port'], server.Site(resources.HomeResource(dbpool))).setServiceParent(serviceCollection)
