@@ -28,7 +28,7 @@ import sys
 from db import setup
 from web import resources
 from mail import smtpsender
-from task import emailer
+from task import emailer, receiver
 
 config = json.load(open('config.json'))
 
@@ -42,3 +42,7 @@ internet.TCPServer(config['port'], server.Site(resources.HomeResource(dbpool))).
 emailer = emailer.Emailer(config, dbpool)
 # send every 15 seconds for development.
 internet.TimerService(15, emailer.sendEmails).setServiceParent(serviceCollection)
+
+receiver = receiver.Receiver(config, dbpool)
+# check every 15 seconds for new emails (development)
+internet.TimerService(15, receiver.receive).setServiceParent(serviceCollection)
