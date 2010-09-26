@@ -1,0 +1,19 @@
+{
+  "port": 8421,
+  "database": {
+    "module": "sqlite3",
+    "parameters": ["nightlynotes.db"]
+  },
+  "email": {
+    "outgoing": {
+      "host": "smtp.gmail.com",
+      "domain": "greplin.com",
+      "handle": "nightlynotes"
+    },
+    "incoming": {
+      "host": "pop.gmail.com",
+      "username": "",
+      "password": ""
+    }
+  }
+}

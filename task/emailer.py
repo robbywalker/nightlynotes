@@ -27,7 +27,7 @@ class Emailer(object):
     self.__dbpool = dbpool
 
     outgoing = config['email']['outgoing']
-    self.__sender = smtpsender.SMTPSender(dbpool, outgoing['host'], outgoing['handle'], outgoing['domain'])
+    self.__sender = smtpsender.SMTPSender(dbpool, outgoing)
 
 
   def sendEmails(self):
