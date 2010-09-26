@@ -21,7 +21,10 @@ from twisted.python import log
 from twisted.web import resource, server, static
 
 import cgi
+import cStringIO
 import hashlib
+import urllib
+
 
 
 class HomeResource(resource.Resource):
@@ -30,8 +33,9 @@ class HomeResource(resource.Resource):
 
     self.putChild('', static.File('static/index.html'))
     self.putChild('signup', SignupResource(dbpool))
-    #self.putChild('user', ...)
+    self.putChild('user', UserResource(dbpool))
     #self.putChild('browse', ...)
+
 
 
 class SignupResource(static.File):
@@ -58,7 +62,7 @@ class SignupResource(static.File):
       log.msg('Successful signup')
       passwordDigest = hashlib.sha224('nightlynotes:%s' % password).hexdigest()
       txn.execute('INSERT INTO user (email, password) VALUES (?, ?)', (email, passwordDigest))
-      request.redirect('/user/%s' % cgi.escape(email))
+      request.redirect('/user/%s' % urllib.quote(email))
       request.finish()
 
 
@@ -69,4 +73,24 @@ class SignupResource(static.File):
 
     else:
       return static.File.render(self, request)
-  
+
+
+
+class UserResource(resource.Resource):
+  def __init__(self, dbpool):
+    resource.Resource.__init__(self)
+    self.__dbpool = dbpool
+
+  def __renderList(self, result, request):
+    s = cStringIO.StringIO()
+    s.write('<h1>Users</h1>')
+    s.write('<ul>')
+    for userRow in result:
+      s.write('<li><a href="/user/%s">%s</a></li>' % (cgi.escape(userRow[0]), cgi.escape(userRow[0])))
+    s.write('</ul>')
+    request.write(s.getvalue())
+    request.finish()
+
+  def render_GET(self, request):
+    self.__dbpool.runQuery("SELECT email FROM user ORDER BY email").addCallbacks(self.__renderList, log.msg, (request,))
+    return server.NOT_DONE_YET
