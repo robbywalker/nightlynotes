@@ -7,13 +7,17 @@
   "email": {
     "outgoing": {
       "host": "smtp.gmail.com",
-      "domain": "greplin.com",
-      "handle": "nightlynotes"
+      "port": 465,
+      "TLS": true,
+      "domain": "yourdomain.com",
+      "handle": "nightlynotes",
+      "username": "nightlynotes@yourdomain.com",
+      "password": "yourpassword"
     },
     "incoming": {
       "host": "pop.gmail.com",
-      "username": "",
-      "password": ""
+      "username": "nightlynotes@yourdomain.com",
+      "password": "yourpassword"
     }
   }
 }
