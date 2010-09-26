@@ -17,9 +17,8 @@
 #  limitations under the License.
 #
 
-
 from twisted.mail import smtp
-from twisted.internet import reactor, defer
+from twisted.internet import defer
 from twisted.enterprise import adbapi
 from twisted.python import log
 
