@@ -99,6 +99,7 @@ class UserResourceTree(resource.Resource):
     return UserResource(path, self.__dbpool)
 
 
+
 class UserResource(resource.Resource):
   def __init__(self, email, dbpool):
     resource.Resource.__init__(self)
