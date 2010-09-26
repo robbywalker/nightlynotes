@@ -19,15 +19,20 @@
 
 from twisted.internet import defer
 from twisted.python import log
-
+from mail import smtpsender
 
 
 class Emailer(object):
-  def __init__(self, dbpool):
+  def __init__(self, config, dbpool):
     self.__dbpool = dbpool
+
+    outgoing = config['email']['outgoing']
+    self.__sender = smtpsender.SMTPSender(dbpool, outgoing['host'], outgoing['handle'], outgoing['domain'])
+
 
   def sendEmails(self):
     self.__dbpool.runQuery('SELECT id, email FROM user').addCallbacks(self.__sendEmails, log.msg)
+
 
   @defer.deferredGenerator
   def __sendEmails(self, result):
@@ -36,6 +41,7 @@ class Emailer(object):
       yield wfd
       wfd.getResult()
 
+
   def __sendEmail(self, userId, email):
-    pass
+    return self.__sender.sendReminder(smtpsender.User(userId, email))
     

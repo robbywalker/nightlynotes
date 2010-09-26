@@ -28,6 +28,7 @@ import sys
 from db import setup
 from web import resources
 from mail import smtpsender
+from task import emailer
 
 config = json.load(open('config.json'))
 
@@ -38,12 +39,6 @@ application = service.Application('nightlynotes')
 serviceCollection = service.IServiceCollection(application)
 internet.TCPServer(config['port'], server.Site(resources.HomeResource(dbpool))).setServiceParent(serviceCollection)
 
-outgoing = config['email']['outgoing']
-sender = smtpsender.SMTPSender(dbpool, outgoing['host'], outgoing['handle'], outgoing['domain'])
-christine = smtpsender.User()
-sender.sendReminder(christine)
-
-#incoming = config['email']['incoming']
-#receiver = handlepop3.POP3Receiver(dbpool, incoming['host'], incoming['username'], incoming['password'])
-
-#receiver.fetchEmails()
+emailer = emailer.Emailer(config, dbpool)
+# send every 15 seconds for development.
+internet.TimerService(15, emailer.sendEmails).setServiceParent(serviceCollection)
