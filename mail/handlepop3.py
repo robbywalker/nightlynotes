@@ -37,7 +37,7 @@ class POP3DownloadFactory(protocol.ClientFactory):
 
   def handleMessage(self, messageData):
     parsedMessage = email.message_from_string(messageData)
-    token = re.search(r'\[(.*)\]', parsedMessage.get('Subject'))
+    token = re.search(r'\[token (.*)\]', parsedMessage.get('Subject'))
     log.msg("parsed token %s from subject: %s" % (str(token), parsedMessage.get('Subject')))
     if token is None:
       return

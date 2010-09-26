@@ -76,7 +76,7 @@ class SMTPSender:
     message = MIMEMultipart()
     message['To'] = toaddr
     message['From'] = fromaddr
-    message['Subject'] = "It's %s - snippetize! [%s]" % (prettydate, token)
+    message['Subject'] = 'It\'s %s - snippetize! [token %s]' % (prettydate, token)
     textPart = MIMEBase('text', 'plain')
     textPart.set_payload('Reply to this email to send in your snippets')
     message.attach(textPart)
