@@ -1,0 +1,13 @@
+{
+  "port": 8421,
+  "database": {
+    "module": "sqlite",
+    "parameters": []
+  },
+  "email": {
+    "outgoing": {
+    },
+    "incoming": {
+    }
+  }
+}
