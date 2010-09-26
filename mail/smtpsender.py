@@ -43,19 +43,19 @@ class SMTPSender:
     return self.generateToken(user.id)
 
   def send(self, result, token):
-    fromaddr = self.__handle + '+' + token + '@' + self.__domain
-    message = self.buildMessage(fromaddr, self.user.addr)
+    fromaddr = self.__handle + '@' + self.__domain
+    message = self.buildMessage(fromaddr, self.user.addr, token)
     messageData = message.as_string(unixfrom=False)
     sending = smtp.sendmail(self.__host, fromaddr, [self.user.addr], messageData)
     sending.addErrback(log.msg)
     return sending
 
-  def buildMessage(self, fromaddr, toaddr):
+  def buildMessage(self, fromaddr, toaddr, token):
     prettydate = datetime.now().strftime('%A, %B %d')
     message = MIMEMultipart()
     message['To'] = toaddr
     message['From'] = fromaddr
-    message['Subject'] = "It's " + prettydate + " - snippetize!"
+    message['Subject'] = 'It\'s %s - snippetize! [token %s]' % (prettydate, token)
     textPart = MIMEBase('text', 'plain')
     textPart.set_payload('Reply to this email to send in your snippets')
     message.attach(textPart)
