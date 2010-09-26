@@ -20,8 +20,7 @@
 from OpenSSL import SSL
 
 from twisted.mail import smtp
-from twisted.internet import defer, reactor
-from twisted.internet.ssl import ClientContextFactory
+from twisted.internet import defer, reactor, ssl
 from twisted.enterprise import adbapi
 from twisted.python import log
 
@@ -29,25 +28,23 @@ from datetime import datetime
 from email.MIMEBase import MIMEBase
 from email.MIMEMultipart import MIMEMultipart
 
+import cStringIO
 import hashlib
 import sys
 
 
 
 def sendMailSsh(mailConfig, fromAddress, toAddresses, messageData):
-  contextFactory = ClientContextFactory()
-  contextFactory.method = SSL.SSLv3_METHOD
-
   resultDeferred = defer.Deferred()
   senderFactory = smtp.ESMTPSenderFactory(
       mailConfig['username'],
       mailConfig['password'],
       fromAddress,
       toAddresses,
-      messageData,
+      cStringIO.StringIO(messageData),
       resultDeferred,
-      contextFactory=contextFactory)
-  reactor.connectTCP(host, port, senderFactory)
+      requireTransportSecurity=False)
+  reactor.connectSSL(mailConfig['host'], mailConfig['port'], senderFactory, ssl.ClientContextFactory())
   return resultDeferred
 
 
@@ -63,11 +60,11 @@ class SMTPSender:
 
   def send(self, result, token):
     log.msg('Sending reminder to %s' % self.user.addr)
-    fromaddr = self.__mailConfig['handle'] + '+' + token + '@' + self.__mailConfig['domain']
+    fromaddr = self.__mailConfig['handle'] + '@' + self.__mailConfig['domain']
     message = self.buildMessage(fromaddr, self.user.addr)
     messageData = message.as_string(unixfrom=False)
 
-    if self.__mailConfig['ssl']:
+    if self.__mailConfig['TLS']:
       sending = sendMailSsh(self.__mailConfig, fromaddr, [self.user.addr], messageData)
     else:
       sending = smtp.sendmail(self.__mailConfig['host'], fromaddr, [self.user.addr], messageData)
