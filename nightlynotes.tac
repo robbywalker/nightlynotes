@@ -40,9 +40,9 @@ serviceCollection = service.IServiceCollection(application)
 internet.TCPServer(config['port'], server.Site(resources.HomeResource(dbpool))).setServiceParent(serviceCollection)
 
 emailer = emailer.Emailer(config, dbpool)
-# send every 15 seconds for development.
-internet.TimerService(15, emailer.sendEmails).setServiceParent(serviceCollection)
+# Send one time per day.
+internet.TimerService(60 * 60 * 24, emailer.sendEmails).setServiceParent(serviceCollection)
 
 receiver = receiver.Receiver(config, dbpool)
-# check every 15 seconds for new emails (development)
-internet.TimerService(15, receiver.receive).setServiceParent(serviceCollection)
+# Check every minute for new emails.
+internet.TimerService(60, receiver.receive).setServiceParent(serviceCollection)
