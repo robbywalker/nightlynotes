@@ -17,17 +17,56 @@
 #  limitations under the License.
 #
 
+from twisted.python import log
 from twisted.web import resource, server, static
 
 import cgi
+import hashlib
 
 
 class HomeResource(resource.Resource):
   def __init__(self, dbpool):
     resource.Resource.__init__(self)
-    self.__dbpool = dbpool
 
-    self.putChild('', static.File("static/index.html"))
-    #self.putChild('signup', ...)
+    self.putChild('', static.File('static/index.html'))
+    self.putChild('signup', SignupResource(dbpool))
     #self.putChild('user', ...)
     #self.putChild('browse', ...)
+
+
+class SignupResource(static.File):
+  def __init__(self, dbpool):
+    static.File.__init__(self, 'static/signup.html')
+    self.__dbpool = dbpool
+
+
+  def __performSignup(self, txn, request):
+    log.msg('Processing signup')
+
+    email = request.args['email'][0]
+    password = request.args['password'][0]
+
+    txn.execute('SELECT * FROM user WHERE email=?', (email,))
+
+    if txn.fetchall():
+      log.msg('Username was taken')
+      # TODO(robbyw): This is a bit hacky!  We should use templates.
+      request.write('<p>That email is already registered.</p>')
+      request.write(file('static/signup.html').read())
+      request.finish()
+    else:
+      log.msg('Successful signup')
+      passwordDigest = hashlib.sha224('nightlynotes:%s' % password).hexdigest()
+      txn.execute('INSERT INTO user (email, password) VALUES (?, ?)', (email, passwordDigest))
+      request.redirect('/user/%s' % cgi.escape(email))
+      request.finish()
+
+
+  def render(self, request):
+    if request.method == 'POST':
+      self.__dbpool.runInteraction(self.__performSignup, request).addErrback(log.msg)
+      return server.NOT_DONE_YET
+
+    else:
+      return static.File.render(self, request)
+  
