@@ -17,9 +17,10 @@
 #  limitations under the License.
 #
 
+from OpenSSL import SSL
 
 from twisted.mail import smtp
-from twisted.internet import reactor, defer
+from twisted.internet import defer, reactor, ssl
 from twisted.enterprise import adbapi
 from twisted.python import log
 
@@ -27,26 +28,46 @@ from datetime import datetime
 from email.MIMEBase import MIMEBase
 from email.MIMEMultipart import MIMEMultipart
 
-import hashlib, sys
+import cStringIO
+import hashlib
+import sys
+
+
+
+def sendMailSsh(mailConfig, fromAddress, toAddresses, messageData):
+  resultDeferred = defer.Deferred()
+  senderFactory = smtp.ESMTPSenderFactory(
+      mailConfig['username'],
+      mailConfig['password'],
+      fromAddress,
+      toAddresses,
+      cStringIO.StringIO(messageData),
+      resultDeferred,
+      requireTransportSecurity=False)
+  reactor.connectSSL(mailConfig['host'], mailConfig['port'], senderFactory, ssl.ClientContextFactory())
+  return resultDeferred
 
 
 
 class SMTPSender:
-  def __init__(self, dbpool, host, handle, domain):
+  def __init__(self, dbpool, mailConfig):
     self.__dbpool = dbpool
-    self.__host = host
-    self.__handle = handle
-    self.__domain = domain
+    self.__mailConfig = mailConfig
 
   def sendReminder(self, user): # Assuming some User object with id and toaddr
     self.user = user
     return self.generateToken(user.id)
 
   def send(self, result, token):
-    fromaddr = self.__handle + '@' + self.__domain
+    log.msg('Sending reminder to %s' % self.user.addr)
+    fromaddr = self.__mailConfig['handle'] + '@' + self.__mailConfig['domain']
     message = self.buildMessage(fromaddr, self.user.addr, token)
     messageData = message.as_string(unixfrom=False)
-    sending = smtp.sendmail(self.__host, fromaddr, [self.user.addr], messageData)
+
+    if self.__mailConfig['TLS']:
+      sending = sendMailSsh(self.__mailConfig, fromaddr, [self.user.addr], messageData)
+    else:
+      sending = smtp.sendmail(self.__mailConfig['host'], fromaddr, [self.user.addr], messageData)
     sending.addErrback(log.msg)
     return sending
 
