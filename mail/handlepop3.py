@@ -27,6 +27,7 @@ class POP3Downloader(pop3client.POP3Client):
   def _finished(self, downloadResults):
     return self.quit()
 
+
 class POP3DownloadFactory(protocol.ClientFactory):
   protocol = POP3Downloader
 
@@ -38,7 +39,8 @@ class POP3DownloadFactory(protocol.ClientFactory):
   def handleMessage(self, messageData):
     parsedMessage = email.message_from_string(messageData)
     token = re.search(r'\[token (.*)\]', parsedMessage.get('Subject'))
-    log.msg("parsed token %s from subject: %s" % (str(token), parsedMessage.get('Subject')))
+    log.msg("parsed token %s from subject: %s" % (
+      str(token.group(1)), parsedMessage.get('Subject')))
     if token is None:
       return
     body = parsedMessage.get_payload()[0].get_payload().strip()
@@ -61,11 +63,36 @@ class POP3DownloadFactory(protocol.ClientFactory):
       return
     user_id = result[0][0]
     date = result[0][1]
-    log.msg('trying to create entry for user %s and date %s' % (user_id, date))
+    log.msg('Creating entry for user %s and date %s' % (user_id, date))
     query = '''
-      INSERT INTO user_entry (user_id, date, text)
+      INSERT OR ABORT INTO user_entry (user_id, date, text)
       VALUES (%s, '%s', '%s')
     ''' % (user_id, date, body)
+    queryDefer = self.__dbpool.runQuery(query)
+    queryDefer.addErrback(self._insertUserEntryFailed, user_id, date, body)
+    return queryDefer
+
+  def _insertUserEntryFailed(self, failure, user_id, date, body):
+    log.msg('Fetching existing user_entry for %s on %s' % (user_id, date))
+    query = '''
+      SELECT text FROM user_entry WHERE user_id = %s AND date = '%s'
+    ''' % (user_id, date)
+    queryDefer = self.__dbpool.runQuery(query)
+    queryDefer.addCallback(
+      self._appendEntry, user_id, date, body).addErrback(
+      self._failed, 'Query: ' + query)
+    return queryDefer
+
+  def _appendEntry(self, result, user_id, date, body):
+    if len(result) != 1:
+      log.msg('Trying to append to an existing entry, but no existing' + \
+        ' entry found for %s on %s?' % (user_id, date))
+      return
+
+    log.msg('Updating entry for user %s and date %s' % (user_id, date))
+    query = '''
+      UPDATE user_entry SET text = '%s\n%s' WHERE user_id = %s AND date = '%s'
+    ''' % (result[0][0], body, user_id, date)
     queryDefer = self.__dbpool.runQuery(query)
     queryDefer.addErrback(self._failed, 'Query: ' + query)
     return queryDefer

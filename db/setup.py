@@ -48,3 +48,9 @@ def SetupDatabase(txn):
     version = 2
     log.msg('Upgraded to version 2')
 
+  if version == 2:
+    txn.execute('CREATE UNIQUE INDEX IF NOT EXISTS user_entry_unique_date ON user_entry(user_id, date)')
+    txn.execute('REPLACE INTO globals VALUES ("version", "3")')
+    version = 3
+    log.msg('Upgraded to version 3')
+
