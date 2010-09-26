@@ -61,7 +61,7 @@ class SMTPSender:
   def send(self, result, token):
     log.msg('Sending reminder to %s' % self.user.addr)
     fromaddr = self.__mailConfig['handle'] + '@' + self.__mailConfig['domain']
-    message = self.buildMessage(fromaddr, self.user.addr)
+    message = self.buildMessage(fromaddr, self.user.addr, token)
     messageData = message.as_string(unixfrom=False)
 
     if self.__mailConfig['TLS']:
@@ -71,12 +71,12 @@ class SMTPSender:
     sending.addErrback(log.msg)
     return sending
 
-  def buildMessage(self, fromaddr, toaddr):
+  def buildMessage(self, fromaddr, toaddr, token):
     prettydate = datetime.now().strftime('%A, %B %d')
     message = MIMEMultipart()
     message['To'] = toaddr
     message['From'] = fromaddr
-    message['Subject'] = "It's " + prettydate + " - snippetize!"
+    message['Subject'] = "It's %s - snippetize! [%s]" % (prettydate, token)
     textPart = MIMEBase('text', 'plain')
     textPart.set_payload('Reply to this email to send in your snippets')
     message.attach(textPart)
