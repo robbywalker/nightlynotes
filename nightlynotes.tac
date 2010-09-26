@@ -22,11 +22,12 @@ from twisted.enterprise import adbapi
 from twisted.python import log
 from twisted.web import resource, server, static
 
-import json
+import simplejson as json
 import sys
 
 from db import setup
 from web import resources
+from mail import smtpsender
 
 config = json.load(open('config.json'))
 
@@ -36,3 +37,13 @@ dbpool.runInteraction(setup.SetupDatabase).addErrback(log.msg)
 application = service.Application('nightlynotes')
 serviceCollection = service.IServiceCollection(application)
 internet.TCPServer(config['port'], server.Site(resources.HomeResource(dbpool))).setServiceParent(serviceCollection)
+
+outgoing = config['email']['outgoing']
+sender = smtpsender.SMTPSender(dbpool, outgoing['host'], outgoing['handle'], outgoing['domain'])
+christine = smtpsender.User()
+sender.sendReminder(christine)
+
+#incoming = config['email']['incoming']
+#receiver = handlepop3.POP3Receiver(dbpool, incoming['host'], incoming['username'], incoming['password'])
+
+#receiver.fetchEmails()
