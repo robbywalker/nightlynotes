@@ -44,5 +44,5 @@ emailer = emailer.Emailer(config, dbpool)
 internet.TimerService(60 * 60 * 24, emailer.sendEmails).setServiceParent(serviceCollection)
 
 receiver = receiver.Receiver(config, dbpool)
-# Check every minute for new emails.
-internet.TimerService(60, receiver.receive).setServiceParent(serviceCollection)
+# Check 4 timers per minute for new emails.
+internet.TimerService(15, receiver.receive).setServiceParent(serviceCollection)

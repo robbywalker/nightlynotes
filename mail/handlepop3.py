@@ -65,7 +65,7 @@ class POP3DownloadFactory(protocol.ClientFactory):
     if token is None:
       log.msg('Missing token from subject: %s' % (parsedMessage.get('Subject')))
       return
-    body = parsedMessage.get_payload()[0].get_payload().strip()
+    body = parsedMessage.get_payload().strip()
     self._getUserAndDateFromToken(token.group(1), body)
 
   def clientConnectionFailed(self, connection, reason):
